@@ -758,4 +758,16 @@ public class EscPosPrinterCommands {
     public EscPosCharsetEncoding getCharsetEncoding() {
         return this.charsetEncoding;
     }
+
+
+
+    public EscPosPrinterCommands cutPaper(int delay) throws EscPosConnectionException {
+        if (!this.printerConnection.isConnected()) {
+            return this;
+        }
+        delay = Math.max(delay, 0);
+        this.printerConnection.write(new byte[]{29, 86, 1});
+        this.printerConnection.send(delay);
+        return this;
+    }
 }
