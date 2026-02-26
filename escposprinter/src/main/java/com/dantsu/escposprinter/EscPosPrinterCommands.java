@@ -597,6 +597,48 @@ public class EscPosPrinterCommands {
         return this;
     }
 
+
+    public EscPosPrinterCommands printImageOneShot(byte[] image) throws EscPosConnectionException {
+        if (!this.printerConnection.isConnected()) {
+            return this;
+        }
+
+        byte[][] bytesToPrint = this.useEscAsteriskCommand
+                ? convertGSv0ToEscAsterisk(image)
+                : new byte[][]{image};
+
+
+        int totalSize = 0;
+        for (byte[] chunk : bytesToPrint) {
+            totalSize += chunk.length;
+        }
+
+        byte[] finalBuffer = new byte[totalSize];
+        int pos = 0;
+        for (byte[] chunk : bytesToPrint) {
+            System.arraycopy(chunk, 0, finalBuffer, pos, chunk.length);
+            pos += chunk.length;
+        }
+
+        int CHUNK_SIZE = 4096;
+        int offset = 0;
+
+        while (offset < finalBuffer.length) {
+            int remaining = finalBuffer.length - offset;
+            int sendSize = Math.min(CHUNK_SIZE, remaining);
+
+            byte[] slice = new byte[sendSize];
+            System.arraycopy(finalBuffer, offset, slice, 0, sendSize);
+
+            this.printerConnection.write(slice);
+            this.printerConnection.send();
+
+            offset += sendSize;
+        }
+
+        return this;
+    }
+
     /**
      * Print a barcode with the connected printer.
      *
